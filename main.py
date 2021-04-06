@@ -3,10 +3,11 @@ import math
 import numpy as np
 from vec3 import vec3
 from tri import *
-dimension = 100
-#list of triangles
+dimension = 20
+background = (30,30,30)
+
 def test():
-    objects = [tri(vec3(0.1,0.1,1) , vec3(0.2,0.7,1) ,vec3(0.8,0.2,1), (255,255,0))]
+    objects = []
     t = objects[0]
     origin = vec3(0.5,0.5,0)
     screen_pos = coordinate_from_pixel(5,5)
@@ -18,15 +19,55 @@ def main():
     if False:
         test()
     else:
-        objects = [tri(vec3(0.1,0.1,1) , vec3(0.2,0.7,1) ,vec3(0.8,0.2,1), (255,255,100))]
+        objects = get_objects() 
         pixels = get_pixels(objects)
         save_image(pixels)
 
+def get_objects():
+    """reads all triangles from a csv file
+    returns list of triangles
+    """
+    color_presets = {'white':(255,255,255), 'blue':(0,0,255)}
+    f = open('objects.csv')
+    objects = []
+    for line in f:
+        if '/' in line:
+            continue
+        params = line.split('-')
+        v0 = vec_from_line(params[0])
+        v1 = vec_from_line(params[1])
+        v2 = vec_from_line(params[2])
+        color_str = params[3].strip()
+        print(color_str)
+        if color_str.strip() in color_presets:
+            #preset color
+            color = color_presets[(color_str)]
+        else:
+            colors = [int(s) for s in color_str.split(',')]
+            color = (colors[0], colors[1], colors[2])
+        
+        t = tri(v0, v1,v2, color)
+        objects.append(t)
+    print(objects)
+    return objects
+
+
+def vec_from_line(str):
+    nums = str.split(',')
+    v = vec3(float(nums[0]), float(nums[1]), float(nums[2]))
+    return v
+
+
 def get_pixels(objects):
+    """does a raytrace for every pixel
+    returns list of pixels
+    """
+    flip_v = -1
+    flip_h = 1
     pixels = []
-    for x in range(dimension):
+    for y in range(dimension)[::flip_v]:
         pixels_row =[]
-        for y in range(dimension):
+        for x in range(dimension)[::flip_h]:
             pixel_val = trace_pixel(x,y, objects)
             pixels_row.append(pixel_val)
         pixels.append(pixels_row)
@@ -49,12 +90,17 @@ def trace_ray(origin3, dir3, objects):
     """finds the color at the end of a ray
     """
     closest_tri = None
+    closest_t = None
     for tri in objects:
-        if tri.ray_tri_intersect(origin3, dir3):
-            closest_tri = tri
-            print(dir3)
+        t = tri.ray_tri_intersect(origin3, dir3)
+        if t is not False:
+            if closest_t is None or t < closest_t:
+                closest_tri = tri
+                closest_t = t
+                print(t)
+
     if closest_tri is None:
-        return (255,255,255)
+        return background
     else:
         
         return closest_tri.color

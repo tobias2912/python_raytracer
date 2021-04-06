@@ -68,4 +68,4 @@ class tri:
         if (dot_product(N, C) < 0) :
             return False; # P is on the right side; 
     
-        return True; # this ray hits the triangle 
+        return t; # this ray hits the triangle 
